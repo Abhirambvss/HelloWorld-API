@@ -14,7 +14,7 @@ function App() {
       alert("Please select a language");
       window.location.reload();
     }
-    const url = `http://localhost:5000/hello?language=${language}`;
+    const url = `https://hello-world--backend.herokuapp.com/hello?language=${language}`;
     try {
       const fetchedResults = await fetch(url,
         {
