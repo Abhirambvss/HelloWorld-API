@@ -11,7 +11,8 @@ Steps to run this folder :
     This runs the app in the development mode.\
     Open [http://localhost:3000](http://localhost:3000) to view it in your browser.\
       The page will reload when you make changes.\
-      You may also see any lint errors in the console.
+      You may also see any lint errors in the console.\
+      This site is deployed on netlify and can be accessed at :[https://hello-world-api.netlify.app/](https://hello-world-api.netlify.app/)
 
 
 ## 2.API
