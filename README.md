@@ -19,4 +19,5 @@ Steps to run this folder :
 Steps to run this folder :
 1. Install all the required dependencies by using the command `npm install`.
 2. After installing the required dependencies, we can run the code in local machine by using `npm start`.\
-   This will start the server at [http://localhost:5000](http://localhost:5000)  and gives the response accordingly to the request made.
+   This will start the server at [http://localhost:5000](http://localhost:5000)  and gives the response accordingly to the request made.\
+   The API is also live on heroku at [https://hello-world--backend.herokuapp.com/](https://hello-world--backend.herokuapp.com/)
