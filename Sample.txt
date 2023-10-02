@@ -1,0 +1,53 @@
+# Script name: Copy-CsvToExcel.ps1
+# Created on: 3/21/2011 
+# Author: OldDog1
+# Purpose: How can I use Windows Powershell to 
+# copy Selected CSV Files to one Excel WorkBook? 
+#----------------------------------------------------- 
+function Release-Ref ($ref) { 
+([System.Runtime.InteropServices.Marshal]::ReleaseComObject( 
+[System.__ComObject]$ref) -gt 0) 
+[System.GC]::Collect() 
+[System.GC]::WaitForPendingFinalizers() 
+} 
+#----------------------------------------------------- 
+$xlPasteValues = -4163         # Values only, not formulas
+$xlCellTypeLastCell = 11       # to find last used cell
+
+$xl = new-object -comobject excel.application 
+$xl.Visible = $True 
+$xl.DisplayAlerts = $False
+$wb = $xl.Workbooks.Add() 
+$i = 1 
+$collection = Get-ChildItem c:\temp\* -include *.txt # Change the location of your CSV files here.
+
+$length = 4
+
+foreach ($item in $collection) {
+$wb1 = $xl.Workbooks.Open("$item")
+$array = $item.ToString()
+$delim = "\"
+$SheetName = $array.split($delim)
+$s = $SheetName[2]
+$sn = $s.split(".")
+$nsn = $sn[0]
+$ws1 = $wb1.worksheets | where {$_.name -eq $nsn}
+Write-Host $item $nsn
+$used = $ws1.usedRange
+$used.Select()
+$used.copy()
+$wb.Activate()
+$ws = $wb.Sheets.Add()
+$ws2 = $wb.worksheets | where {$_.name -eq "sheet$i"}
+[void]$ws2.Range("A1").PasteSpecial(-4163) 
+$ws2.name = $nsn
+$i++ 
+$wb1.Close()
+  
+}
+
+# $xl.quit()
+
+# $a = Release-Ref($ws) 
+# $a = Release-Ref($wb) 
+# $a = Release-Ref($xl)
