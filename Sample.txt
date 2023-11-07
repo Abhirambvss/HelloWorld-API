@@ -3,41 +3,22 @@ $excelFilePath = "C:\Path\to\your\file.xlsx"
 
 # Load the Excel COM object
 $excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false
 $workbook = $excel.Workbooks.Open($excelFilePath)
 $worksheet = $workbook.Sheets.Item(1)
 
 # Find the Used Range
 $usedRange = $worksheet.UsedRange
 
-# Determine the column you want to sort by (e.g., Column A)
-$sortColumn = 1  # Column A
+# Remove Duplicates
+$usedRange.RemoveDuplicates(1, 1, [Microsoft.Office.Interop.Excel.XlYesNoGuess]::xlYes)
 
-# Define a range for the column you want to sort
-$columnRange = $usedRange.Columns.Item($sortColumn)
-
-# Specify the header row (if any)
-$headerRow = $worksheet.Cells.Item(1, $sortColumn).Value()
-
-# Specify the number of rows in your dataset (excluding the header)
-$dataRows = $usedRange.Rows.Count - 1  # Subtract 1 for the header
-
-# Sort the column based on dates from newest to oldest
-$columnRange.Sort([System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrder]::xlDescending, [System.Type]::Missing, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrder]::xlDescending, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrder]::xlAscending, [Microsoft.Office.Interop.Excel.XlYesNoGuess]::xlNo, [System.Type]::Missing, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrientation]::xlSortColumns, [Microsoft.Office.Interop.Excel.XlSortMethod]::xlPinYin, [Microsoft.Office.Interop.Excel.XlSortDataOption]::xlSortTextAsNumbers)
-
-# Restore the header (if any)
-$worksheet.Cells.Item(1, $sortColumn).Value() = $headerRow
-
-# Save and Close the workbook
+# Save and Close
 $workbook.Save()
 $workbook.Close()
-
-# Quit Excel
 $excel.Quit()
-[System.Runtime.InteropServices.Marshal]::ReleaseComObject($excel) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
 
-Write-Host "Column sorted based on dates from newest to oldest."
+Write-Host "Duplicates removed from $excelFilePath."
 
 # Clean up
-Remove-Variable excel, workbook, worksheet, usedRange, columnRange, headerRow
-
+Remove-Variable excel, workbook, worksheet, usedRange
