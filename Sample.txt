@@ -1,53 +1,43 @@
-# Script name: Copy-CsvToExcel.ps1
-# Created on: 3/21/2011 
-# Author: OldDog1
-# Purpose: How can I use Windows Powershell to 
-# copy Selected CSV Files to one Excel WorkBook? 
-#----------------------------------------------------- 
-function Release-Ref ($ref) { 
-([System.Runtime.InteropServices.Marshal]::ReleaseComObject( 
-[System.__ComObject]$ref) -gt 0) 
-[System.GC]::Collect() 
-[System.GC]::WaitForPendingFinalizers() 
-} 
-#----------------------------------------------------- 
-$xlPasteValues = -4163         # Values only, not formulas
-$xlCellTypeLastCell = 11       # to find last used cell
+# Specify the path to your Excel file
+$excelFilePath = "C:\Path\to\your\file.xlsx"
 
-$xl = new-object -comobject excel.application 
-$xl.Visible = $True 
-$xl.DisplayAlerts = $False
-$wb = $xl.Workbooks.Add() 
-$i = 1 
-$collection = Get-ChildItem c:\temp\* -include *.txt # Change the location of your CSV files here.
+# Load the Excel COM object
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+$workbook = $excel.Workbooks.Open($excelFilePath)
+$worksheet = $workbook.Sheets.Item(1)
 
-$length = 4
+# Find the Used Range
+$usedRange = $worksheet.UsedRange
 
-foreach ($item in $collection) {
-$wb1 = $xl.Workbooks.Open("$item")
-$array = $item.ToString()
-$delim = "\"
-$SheetName = $array.split($delim)
-$s = $SheetName[2]
-$sn = $s.split(".")
-$nsn = $sn[0]
-$ws1 = $wb1.worksheets | where {$_.name -eq $nsn}
-Write-Host $item $nsn
-$used = $ws1.usedRange
-$used.Select()
-$used.copy()
-$wb.Activate()
-$ws = $wb.Sheets.Add()
-$ws2 = $wb.worksheets | where {$_.name -eq "sheet$i"}
-[void]$ws2.Range("A1").PasteSpecial(-4163) 
-$ws2.name = $nsn
-$i++ 
-$wb1.Close()
-  
-}
+# Determine the column you want to sort by (e.g., Column A)
+$sortColumn = 1  # Column A
 
-# $xl.quit()
+# Define a range for the column you want to sort
+$columnRange = $usedRange.Columns.Item($sortColumn)
 
-# $a = Release-Ref($ws) 
-# $a = Release-Ref($wb) 
-# $a = Release-Ref($xl)
+# Specify the header row (if any)
+$headerRow = $worksheet.Cells.Item(1, $sortColumn).Value()
+
+# Specify the number of rows in your dataset (excluding the header)
+$dataRows = $usedRange.Rows.Count - 1  # Subtract 1 for the header
+
+# Sort the column based on dates from newest to oldest
+$columnRange.Sort([System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrder]::xlDescending, [System.Type]::Missing, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrder]::xlDescending, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrder]::xlAscending, [Microsoft.Office.Interop.Excel.XlYesNoGuess]::xlNo, [System.Type]::Missing, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlSortOrientation]::xlSortColumns, [Microsoft.Office.Interop.Excel.XlSortMethod]::xlPinYin, [Microsoft.Office.Interop.Excel.XlSortDataOption]::xlSortTextAsNumbers)
+
+# Restore the header (if any)
+$worksheet.Cells.Item(1, $sortColumn).Value() = $headerRow
+
+# Save and Close the workbook
+$workbook.Save()
+$workbook.Close()
+
+# Quit Excel
+$excel.Quit()
+[System.Runtime.InteropServices.Marshal]::ReleaseComObject($excel) | Out-Null
+
+Write-Host "Column sorted based on dates from newest to oldest."
+
+# Clean up
+Remove-Variable excel, workbook, worksheet, usedRange, columnRange, headerRow
+
