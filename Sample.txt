@@ -1,3 +1,28 @@
+# Source Excel file path
+$sourceExcelFilePath = "C:\Path\to\source\file.xlsx"
+
+# Destination Excel file path
+$destinationExcelFilePath = "C:\Path\to\destination\file.xlsx"
+
+# Columns by name to be copied
+$columnsByName = "Column1", "Column2"  # Replace with your column names
+
+# Load the Excel COM object for source file
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $false
+$sourceWorkbook = $excel.Workbooks.Open($sourceExcelFilePath)
+$sourceWorksheet = $sourceWorkbook.Sheets.Item(1)
+
+# Load the Excel COM object for destination file
+$destExcel = New-Object -ComObject Excel.Application
+$destExcel.Visible = $true
+$destWorkbook = $destExcel.Workbooks.Open($destinationExcelFilePath)
+$destWorksheet = $destWorkbook.Sheets.Item(1)
+
+# Apply AutoFilter to the source worksheet
+$usedRange = $sourceWorksheet.UsedRange
+$usedRange.AutoFilter()
+
 # Array to hold column data
 $columnsData = @()
 
@@ -11,13 +36,20 @@ foreach ($columnName in $columnsByName) {
     }
 }
 
+# Calculate the number of rows and columns to paste
+$rowCount = $columnsData[0].GetUpperBound(0)
+$columnCount = $columnsData.Count
+
 # Find the next empty column in the destination sheet
 $destUsedRange = $destWorksheet.UsedRange
-$destLastColumn = $destUsedRange.SpecialCells(11).Column + 1
-
-# Define the range where you want to paste the columns in the destination file
+$destLastColumn = $destUsedRange.Columns.Count + 1
 $destRange = $destWorksheet.Cells.Item(1, $destLastColumn)
-$destRange.Resize($columnsData[0].GetUpperBound(0), $columnsData.Count).Value() = $columnsData
+
+# Paste the columns' data to the destination sheet
+$destRange.Resize($rowCount, $columnCount).Value() = $columnsData
 
 # Save the destination workbook
 $destWorkbook.Save()
+
+# Clean up (optional)
+# Remove-Variable excel, sourceWorkbook, sourceWorksheet, destExcel, destWorkbook, destWorksheet, columnsData
