@@ -1,24 +1,23 @@
-# Specify the path to your Excel file
-$excelFilePath = "C:\Path\to\your\file.xlsx"
+# Array to hold column data
+$columnsData = @()
 
-# Load the Excel COM object
-$excel = New-Object -ComObject Excel.Application
-$workbook = $excel.Workbooks.Open($excelFilePath)
-$worksheet = $workbook.Sheets.Item(1)
+# Copy content from specific columns after applying AutoFilter
+foreach ($columnName in $columnsByName) {
+    $column = $usedRange.Rows.Item(1).EntireRow.Find($columnName)
 
-# Find the Used Range
-$usedRange = $worksheet.UsedRange
+    if ($column -ne $null) {
+        $columnData = $column.EntireColumn.Value()
+        $columnsData += ,$columnData  # Add column data to the array
+    }
+}
 
-# Remove Duplicates
-$usedRange.RemoveDuplicates(1, 1, [Microsoft.Office.Interop.Excel.XlYesNoGuess]::xlYes)
+# Find the next empty column in the destination sheet
+$destUsedRange = $destWorksheet.UsedRange
+$destLastColumn = $destUsedRange.SpecialCells(11).Column + 1
 
-# Save and Close
-$workbook.Save()
-$workbook.Close()
-$excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+# Define the range where you want to paste the columns in the destination file
+$destRange = $destWorksheet.Cells.Item(1, $destLastColumn)
+$destRange.Resize($columnsData[0].GetUpperBound(0), $columnsData.Count).Value() = $columnsData
 
-Write-Host "Duplicates removed from $excelFilePath."
-
-# Clean up
-Remove-Variable excel, workbook, worksheet, usedRange
+# Save the destination workbook
+$destWorkbook.Save()
