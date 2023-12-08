@@ -1,3 +1,5 @@
+$foundCell = $searchRange.Find($searchValue, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlFindLookIn]::xlValues, [Microsoft.Office.Interop.Excel.XlLookAt]::xlWhole)
+
 # Function to convert column letter to number (for filtering columns)
 function Get-ColumnIndex {
     param([string]$columnName)
