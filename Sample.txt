@@ -1,85 +1,34 @@
-$foundCell = $searchRange.Find($searchValue, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlFindLookIn]::xlValues, [Microsoft.Office.Interop.Excel.XlLookAt]::xlWhole)
-
-# Function to convert column letter to number (for filtering columns)
-function Get-ColumnIndex {
-    param([string]$columnName)
-
-    $index = 0
-    $base = [byte][char]'A' - 1
-
-    foreach ($character in $columnName.ToCharArray()) {
-        $index = $index * 26 + ([byte][char]$character - $base)
-    }
-
-    return $index
-}
-
-# Convert column name to index
-$columnIndex = Get-ColumnIndex -columnName $columnName
-
-
-# Function to convert column number to letter for Excel (supports beyond column Z)
-function Get-ExcelColumnName {
-    param(
-        [int]$columnNumber
-    )
-
-    $columnName = [System.Text.StringBuilder]::new()
-
-    while ($columnNumber -gt 0) {
-        $remainder = ($columnNumber - 1) % 26
-        $columnName.Insert(0, [char]([byte]('A') + $remainder))
-        $columnNumber = [math]::Floor(($columnNumber - $remainder) / 26)
-    }
-
-    return $columnName.ToString()
-}
-
 # Path to your Excel file
 $excelFilePath = "C:\Path\to\your\file.xlsx"
 
 # Column name
-$columnName = "ColumnName"  # Replace with your column name
-
-# Value to find
-$searchValue = "YourValueToFind"
+$columnName = "YourColumnName"  # Replace with your column name
 
 # Create a new Excel application object
 $excel = New-Object -ComObject Excel.Application
-
-# Make Excel visible (optional)
 $excel.Visible = $false
 
 # Open the workbook
 $workbook = $excel.Workbooks.Open($excelFilePath)
-
-# Get the first worksheet
 $worksheet = $workbook.Sheets.Item(1)
 
-# Get the column number using the column name
-$columnNumber = ($worksheet.Cells.Item(1, 1).EntireRow.Find($columnName)).Column
-
-# Convert column number to letter
-$columnName = Get-ExcelColumnName -columnNumber $columnNumber
+# Find the column by its name
+$usedRange = $worksheet.UsedRange
+$columnNumber = $usedRange.Rows.Item(1).Find($columnName).Column
 
 # Get the used range of the column
-$columnRange = $worksheet.Range("$columnName:$columnName")
+$columnRange = $worksheet.Range($worksheet.Cells.Item(1, $columnNumber), $worksheet.Cells.Item($usedRange.Rows.Count, $columnNumber))
+$valuesHashTable = @{}
 
-# Get the values in the column
-$columnData = $columnRange.Value()
-
-# Flatten the array of values
-$flattenedColumnData = $columnData | ForEach-Object { $_ }
-
-# Search for the value within the column
-if ($flattenedColumnData -contains $searchValue) {
-    Write-Host "Found '$searchValue' in column '$columnName'."
-} else {
-    Write-Host "Value '$searchValue' not found in column '$columnName'."
+# Get all values and their row numbers into a hashtable
+foreach ($cell in $columnRange.Cells) {
+    $valuesHashTable[$cell.Value2] = $cell.Row
 }
+
+# Display the hashtable
+$valuesHashTable
 
 # Close Excel without saving changes
 $workbook.Close($false)
 $excel.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel)
-
