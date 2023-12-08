@@ -53,3 +53,6 @@ $destWorkbook.Save()
 
 # Clean up (optional)
 # Remove-Variable excel, sourceWorkbook, sourceWorksheet, destExcel, destWorkbook, destWorksheet, columnsData
+
+    $foundCell = $columnRange.Find($valueToFind, [System.Type]::Missing, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlLookAt]::xlWhole, [Microsoft.Office.Interop.Excel.XlSearchOrder]::xlByRows)
+
