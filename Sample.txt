@@ -1,48 +1,65 @@
+# Function to convert column number to letter for Excel (supports beyond column Z)
+function Get-ExcelColumnName {
+    param(
+        [int]$columnNumber
+    )
+
+    $columnName = [System.Text.StringBuilder]::new()
+
+    while ($columnNumber -gt 0) {
+        $remainder = ($columnNumber - 1) % 26
+        $columnName.Insert(0, [char]([byte]('A') + $remainder))
+        $columnNumber = [math]::Floor(($columnNumber - $remainder) / 26)
+    }
+
+    return $columnName.ToString()
+}
+
 # Path to your Excel file
-$excelFilePath = "C:\path\to\your\excel_file.xlsx"
+$excelFilePath = "C:\Path\to\your\file.xlsx"
 
-# Specify the sheet name and column name
-$sheetName = "Sheet1$"  # Replace with your sheet name
-$columnName = "Column1"  # Replace with your column name
+# Column name
+$columnName = "ColumnName"  # Replace with your column name
 
-# Array of values to search
-$searchArray = @("Value1", "Value2", ... , "Value100")  # Replace with your search values
+# Value to find
+$searchValue = "YourValueToFind"
 
-# Create a HashSet for faster lookup
-$searchSet = [System.Collections.Generic.HashSet[string]]::new($searchArray)
+# Create a new Excel application object
+$excel = New-Object -ComObject Excel.Application
 
-# Connection string for Excel using OLEDB
-$connString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$excelFilePath;Extended Properties='Excel 12.0 Xml;HDR=YES';"
+# Make Excel visible (optional)
+$excel.Visible = $false
 
-# SQL query to retrieve data from the Excel file
-$query = "SELECT * FROM [$sheetName]"
+# Open the workbook
+$workbook = $excel.Workbooks.Open($excelFilePath)
 
-# Create a connection to Excel
-$conn = New-Object System.Data.OleDb.OleDbConnection($connString)
-$conn.Open()
+# Get the first worksheet
+$worksheet = $workbook.Sheets.Item(1)
 
-# Create a command and execute the query
-$cmd = New-Object System.Data.OleDb.OleDbCommand($query, $conn)
-$reader = $cmd.ExecuteReader()
+# Get the column number using the column name
+$columnNumber = ($worksheet.Cells.Item(1, 1).EntireRow.Find($columnName)).Column
 
-# Loop through the rows and search for values
-while ($reader.Read()) {
-    $cellValue = $reader[$columnName].ToString()
-    if ($searchSet.Contains($cellValue)) {
-        Write-Output "Value '$cellValue' found in column '$columnName' at row $($reader.GetOrdinal($columnName))."
-        $searchSet.Remove($cellValue)  # Remove the found value from the set
-        if ($searchSet.Count -eq 0) {
-            break  # Exit the loop if all values are found
-        }
-    }
+# Convert column number to letter
+$columnName = Get-ExcelColumnName -columnNumber $columnNumber
+
+# Get the used range of the column
+$columnRange = $worksheet.Range("$columnName:$columnName")
+
+# Get the values in the column
+$columnData = $columnRange.Value()
+
+# Flatten the array of values
+$flattenedColumnData = $columnData | ForEach-Object { $_ }
+
+# Search for the value within the column
+if ($flattenedColumnData -contains $searchValue) {
+    Write-Host "Found '$searchValue' in column '$columnName'."
+} else {
+    Write-Host "Value '$searchValue' not found in column '$columnName'."
 }
 
-# Close the connection
-$conn.Close()
+# Close Excel without saving changes
+$workbook.Close($false)
+$excel.Quit()
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel)
 
-# Display values not found
-if ($searchSet.Count -gt 0) {
-    foreach ($value in $searchSet) {
-        Write-Output "Value '$value' not found in column '$columnName'."
-    }
-}
