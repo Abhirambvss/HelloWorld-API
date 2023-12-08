@@ -1,3 +1,21 @@
+# Function to convert column letter to number (for filtering columns)
+function Get-ColumnIndex {
+    param([string]$columnName)
+
+    $index = 0
+    $base = [byte][char]'A' - 1
+
+    foreach ($character in $columnName.ToCharArray()) {
+        $index = $index * 26 + ([byte][char]$character - $base)
+    }
+
+    return $index
+}
+
+# Convert column name to index
+$columnIndex = Get-ColumnIndex -columnName $columnName
+
+
 # Function to convert column number to letter for Excel (supports beyond column Z)
 function Get-ExcelColumnName {
     param(
