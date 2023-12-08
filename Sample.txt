@@ -1,58 +1,48 @@
-# Source Excel file path
-$sourceExcelFilePath = "C:\Path\to\source\file.xlsx"
+# Path to your Excel file
+$excelFilePath = "C:\path\to\your\excel_file.xlsx"
 
-# Destination Excel file path
-$destinationExcelFilePath = "C:\Path\to\destination\file.xlsx"
+# Specify the sheet name and column name
+$sheetName = "Sheet1$"  # Replace with your sheet name
+$columnName = "Column1"  # Replace with your column name
 
-# Columns by name to be copied
-$columnsByName = "Column1", "Column2"  # Replace with your column names
+# Array of values to search
+$searchArray = @("Value1", "Value2", ... , "Value100")  # Replace with your search values
 
-# Load the Excel COM object for source file
-$excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false
-$sourceWorkbook = $excel.Workbooks.Open($sourceExcelFilePath)
-$sourceWorksheet = $sourceWorkbook.Sheets.Item(1)
+# Create a HashSet for faster lookup
+$searchSet = [System.Collections.Generic.HashSet[string]]::new($searchArray)
 
-# Load the Excel COM object for destination file
-$destExcel = New-Object -ComObject Excel.Application
-$destExcel.Visible = $true
-$destWorkbook = $destExcel.Workbooks.Open($destinationExcelFilePath)
-$destWorksheet = $destWorkbook.Sheets.Item(1)
+# Connection string for Excel using OLEDB
+$connString = "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$excelFilePath;Extended Properties='Excel 12.0 Xml;HDR=YES';"
 
-# Apply AutoFilter to the source worksheet
-$usedRange = $sourceWorksheet.UsedRange
-$usedRange.AutoFilter()
+# SQL query to retrieve data from the Excel file
+$query = "SELECT * FROM [$sheetName]"
 
-# Array to hold column data
-$columnsData = @()
+# Create a connection to Excel
+$conn = New-Object System.Data.OleDb.OleDbConnection($connString)
+$conn.Open()
 
-# Copy content from specific columns after applying AutoFilter
-foreach ($columnName in $columnsByName) {
-    $column = $usedRange.Rows.Item(1).EntireRow.Find($columnName)
+# Create a command and execute the query
+$cmd = New-Object System.Data.OleDb.OleDbCommand($query, $conn)
+$reader = $cmd.ExecuteReader()
 
-    if ($column -ne $null) {
-        $columnData = $column.EntireColumn.Value()
-        $columnsData += ,$columnData  # Add column data to the array
+# Loop through the rows and search for values
+while ($reader.Read()) {
+    $cellValue = $reader[$columnName].ToString()
+    if ($searchSet.Contains($cellValue)) {
+        Write-Output "Value '$cellValue' found in column '$columnName' at row $($reader.GetOrdinal($columnName))."
+        $searchSet.Remove($cellValue)  # Remove the found value from the set
+        if ($searchSet.Count -eq 0) {
+            break  # Exit the loop if all values are found
+        }
     }
 }
 
-# Calculate the number of rows and columns to paste
-$rowCount = $columnsData[0].GetUpperBound(0)
-$columnCount = $columnsData.Count
+# Close the connection
+$conn.Close()
 
-# Find the next empty column in the destination sheet
-$destUsedRange = $destWorksheet.UsedRange
-$destLastColumn = $destUsedRange.Columns.Count + 1
-$destRange = $destWorksheet.Cells.Item(1, $destLastColumn)
-
-# Paste the columns' data to the destination sheet
-$destRange.Resize($rowCount, $columnCount).Value() = $columnsData
-
-# Save the destination workbook
-$destWorkbook.Save()
-
-# Clean up (optional)
-# Remove-Variable excel, sourceWorkbook, sourceWorksheet, destExcel, destWorkbook, destWorksheet, columnsData
-
-    $foundCell = $columnRange.Find($valueToFind, [System.Type]::Missing, [System.Type]::Missing, [Microsoft.Office.Interop.Excel.XlLookAt]::xlWhole, [Microsoft.Office.Interop.Excel.XlSearchOrder]::xlByRows)
-
+# Display values not found
+if ($searchSet.Count -gt 0) {
+    foreach ($value in $searchSet) {
+        Write-Output "Value '$value' not found in column '$columnName'."
+    }
+}
