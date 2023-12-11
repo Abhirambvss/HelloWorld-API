@@ -1,34 +1,47 @@
-# Path to your Excel file
-$excelFilePath = "C:\Path\to\your\file.xlsx"
 
-# Column name
-$columnName = "YourColumnName"  # Replace with your column name
+```powershell
+# Path to the first Excel file
+$firstExcelFile = "C:\Path\to\first\file.xlsx"
+
+# Path to the second Excel file
+$secondExcelFile = "C:\Path\to\second\file.xlsx"
 
 # Create a new Excel application object
 $excel = New-Object -ComObject Excel.Application
 $excel.Visible = $false
+$excel.DisplayAlerts = $false
 
-# Open the workbook
-$workbook = $excel.Workbooks.Open($excelFilePath)
-$worksheet = $workbook.Sheets.Item(1)
+# Open the first Excel file
+$workbook1 = $excel.Workbooks.Open($firstExcelFile)
+$worksheet1 = $workbook1.Sheets.Item(1)
+$usedRange1 = $worksheet1.UsedRange
+$lastRow1 = $usedRange1.Rows.Count
 
-# Find the column by its name
-$usedRange = $worksheet.UsedRange
-$columnNumber = $usedRange.Rows.Item(1).Find($columnName).Column
+# Open the second Excel file
+$workbook2 = $excel.Workbooks.Open($secondExcelFile)
+$worksheet2 = $workbook2.Sheets.Item(1)
+$usedRange2 = $worksheet2.UsedRange
+$lastRow2 = $usedRange2.Rows.Count
 
-# Get the used range of the column
-$columnRange = $worksheet.Range($worksheet.Cells.Item(1, $columnNumber), $worksheet.Cells.Item($usedRange.Rows.Count, $columnNumber))
-$valuesHashTable = @{}
+# Loop through the first file
+for ($i = 1; $i -le $lastRow1; $i++) {
+    # Get the value to search for in the first file
+    $searchValue = $worksheet1.Cells.Item($i, 1).Value2  # Assuming search column is A (1st column)
 
-# Get all values and their row numbers into a hashtable
-foreach ($cell in $columnRange.Cells) {
-    $valuesHashTable[$cell.Value2] = $cell.Row
+    # Construct the VLOOKUP formula
+    $formula = "=VLOOKUP(`"$searchValue`", '" + $secondExcelFile + "'!$A$1:$C$100, 2, FALSE)"  # Adjust range as needed
+
+    # Get the cell to place the formula in the first file (assuming result goes to column B)
+    $resultCell = $worksheet1.Cells.Item($i, 2)  # Change the column index if needed
+
+    # Apply the VLOOKUP formula to the cell in the first file
+    $resultCell.Formula = $formula
 }
 
-# Display the hashtable
-$valuesHashTable
-
-# Close Excel without saving changes
-$workbook.Close($false)
+# Save changes and close Excel
+$workbook1.Save()
+$workbook2.Close()
 $excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel)
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+```
+
