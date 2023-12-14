@@ -1,47 +1,39 @@
+To achieve this efficiently, you can use the `StreamReader` method to read the CSV file line by line and perform the search operation. For each line, split it into columns and check if the value in the specified column matches any value from your array of search values. If it does, retrieve the other column values from that line.
+
+Here's an example of how you can approach this in PowerShell:
 
 ```powershell
-# Path to the first Excel file
-$firstExcelFile = "C:\Path\to\first\file.xlsx"
+# Define the array of values to search
+$searchValues = @("value1", "value2", "value3")  # Add your search values here
 
-# Path to the second Excel file
-$secondExcelFile = "C:\Path\to\second\file.xlsx"
+# Define the column index to search in (assuming it's the first column, change as needed)
+$searchColumnIndex = 0
 
-# Create a new Excel application object
-$excel = New-Object -ComObject Excel.Application
-$excel.Visible = $false
-$excel.DisplayAlerts = $false
-
-# Open the first Excel file
-$workbook1 = $excel.Workbooks.Open($firstExcelFile)
-$worksheet1 = $workbook1.Sheets.Item(1)
-$usedRange1 = $worksheet1.UsedRange
-$lastRow1 = $usedRange1.Rows.Count
-
-# Open the second Excel file
-$workbook2 = $excel.Workbooks.Open($secondExcelFile)
-$worksheet2 = $workbook2.Sheets.Item(1)
-$usedRange2 = $worksheet2.UsedRange
-$lastRow2 = $usedRange2.Rows.Count
-
-# Loop through the first file
-for ($i = 1; $i -le $lastRow1; $i++) {
-    # Get the value to search for in the first file
-    $searchValue = $worksheet1.Cells.Item($i, 1).Value2  # Assuming search column is A (1st column)
-
-    # Construct the VLOOKUP formula
-    $formula = "=VLOOKUP(`"$searchValue`", '" + $secondExcelFile + "'!$A$1:$C$100, 2, FALSE)"  # Adjust range as needed
-
-    # Get the cell to place the formula in the first file (assuming result goes to column B)
-    $resultCell = $worksheet1.Cells.Item($i, 2)  # Change the column index if needed
-
-    # Apply the VLOOKUP formula to the cell in the first file
-    $resultCell.Formula = $formula
+# Define your processing logic here
+function Process-Data($line) {
+    $data = $line.Split(',')  # Split the line by comma (assuming CSV)
+    
+    # Check if the value in the specified column matches any search value
+    if ($searchValues -contains $data[$searchColumnIndex]) {
+        # Output the other column values from the line
+        # Adjust column indices based on your CSV structure
+        $otherValues = $data[1..($data.Length - 1)] -join ','  # Remaining column values
+        
+        # Output the matched line data (or perform other operations)
+        Write-Output "Match found: $otherValues"
+    }
 }
 
-# Save changes and close Excel
-$workbook1.Save()
-$workbook2.Close()
-$excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+# Reading the file using StreamReader
+$file = "path\to\your\file.csv"
+$reader = [System.IO.File]::OpenText($file)
+
+# Process the file data in parallel
+$reader | ForEach-Object -Parallel {
+    Process-Data $_
+} -ThrottleLimit 5 # Adjust the throttle limit as needed
+
+$reader.Close()
 ```
 
+This script reads the CSV file line by line and checks if the value in the specified column matches any of the values in the search array. If a match is found, it retrieves the remaining column values from that line. Adjust the column indices and search criteria according to your CSV file's structure and the specific column you want to search within.
