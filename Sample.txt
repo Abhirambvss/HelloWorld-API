@@ -37,3 +37,34 @@ $reader.Close()
 ```
 
 This script reads the CSV file line by line and checks if the value in the specified column matches any of the values in the search array. If a match is found, it retrieves the remaining column values from that line. Adjust the column indices and search criteria according to your CSV file's structure and the specific column you want to search within.
+
+
+Reading a CSV file in parallel using PowerShell can be achieved by splitting the workload across multiple threads or processes. PowerShell inherently doesn't support parallel processing of CSV files directly via `StreamReader`. However, you can achieve parallelism using PowerShell Jobs or Runspaces.
+
+Here's an example using PowerShell Jobs:
+
+```powershell
+# Define the function to process rows
+function ProcessCSVRows($startRow, $endRow) {
+    $csvData = Import-Csv -Path "yourfile.csv" | Select-Object -Index ($startRow..$endRow)
+    # Process the data here
+    $csvData
+}
+
+# Define the number of rows to process in each job
+$rowBlockSize = 10000
+$totalRows = 600000
+
+# Loop through the CSV in chunks
+for ($i = 0; $i -lt $totalRows; $i += $rowBlockSize) {
+    $startRow = $i
+    $endRow = [Math]::Min($i + $rowBlockSize - 1, $totalRows - 1)
+
+    # Start a new job to process a chunk of rows
+    Start-Job -ScriptBlock ${function:ProcessCSVRows} -ArgumentList $startRow, $endRow | Wait-Job | Receive-Job
+}
+```
+
+This script divides the CSV file into chunks of 10,000 rows and processes each chunk in a separate PowerShell Job. You might need to adapt the "Process the data here" part to suit your specific processing needs.
+
+Remember, the actual execution time might vary based on your system's resources and the complexity of operations performed on the CSV data. Additionally, managing parallel jobs efficiently requires consideration of resource constraints and synchronization, depending on the nature of your task.
